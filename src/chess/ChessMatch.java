@@ -1,5 +1,6 @@
 package chess;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +23,7 @@ public class ChessMatch {
 	private boolean cheque;
 	private boolean chequeMate;
 	private ChessPiece enPassantVulnerable;
+	private ChessPiece promoted;
 	
 	private List<Piece> piecesOnTheBoard = new ArrayList<>();
 	private List<Piece> capturedPieces = new ArrayList<>();
@@ -64,6 +66,11 @@ public class ChessMatch {
 		
 		ChessPiece movedPiece = (ChessPiece) board.piece(target);
 		
+		if((movedPiece.getColor() == Color.WHITE && target.getRow() == 0)||(movedPiece.getColor() == Color.BLACK && target.getRow() == 7)) {
+			promoted = (ChessPiece)board.piece(target);
+			promoted = replacePromotedPiece("Q");
+		}
+		
 		cheque = (testeCheque(opponent(currentPlayer))) ? true : false;
 		
 		if(testeChequeMate(opponent(currentPlayer))) {
@@ -79,6 +86,38 @@ public class ChessMatch {
 		}
 		
 		return (ChessPiece) capturedPiece;
+	}
+	
+	public ChessPiece replacePromotedPiece(String type) {
+		if(promoted == null) {
+			throw new IllegalStateException("Não tem peça para ser promovida!");
+		}
+		if(!type.equals("B") && !type.equals("T") && !type.equals("C") && !type.equals("Q")) {
+			throw new InvalidParameterException("Tipo invalido para promoção!");
+		}
+		
+		Position pos = promoted.getChessPosition().toPosition();
+		Piece p = board.removePiece(pos);
+		piecesOnTheBoard.remove(p);
+		
+		ChessPiece newPiece = newPiece(type, promoted.getColor());
+		board.placePiece(newPiece, pos);
+		piecesOnTheBoard.add(newPiece);
+		
+		return newPiece;
+	}
+
+	private ChessPiece newPiece(String type, Color color) {
+		switch(type) {
+			case "B":
+				return new Bishop(board,color);
+			case "C":
+				return new Knight(board,color);
+			case "T":
+				return new Rook(board,color);
+			default:
+				return new Queen(board,color);
+		}
 	}
 	
 	private void undoMove(Position source, Position target, Piece capturedPiece) {
@@ -306,6 +345,10 @@ public class ChessMatch {
 	
 	public ChessPiece getEnPassantVulnerable() {
 		return enPassantVulnerable;
+	}
+	
+	public ChessPiece getPromoted() {
+		return promoted;
 	}
 	
 }
